@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/dxvgef/tsing"
 	"github.com/gin-gonic/gin"
 	"github.com/labstack/echo"
 )
@@ -623,5 +624,53 @@ func BenchmarkGinParseAPI(b *testing.B) {
 	gin.SetMode(gin.ReleaseMode)
 	g := gin.New()
 	loadGinRoutes(g, parseAPI)
+	benchmarkRoutes(b, g, parseAPI)
+}
+
+func tsingHandler(method, path string) tsing.Handler {
+	return func(c *tsing.Context) error {
+		c.ResponseWriter.Write([]byte("OK"))
+		c.ResponseWriter.WriteHeader(http.StatusOK)
+		return nil
+	}
+}
+func loadTsingRoutes(g *tsing.Engine, routes []*Route) {
+	for _, r := range routes {
+		switch r.Method {
+		case "GET":
+			g.GET(r.Path, tsingHandler(r.Method, r.Path))
+		case "POST":
+			g.POST(r.Path, tsingHandler(r.Method, r.Path))
+		case "PATCH":
+			g.PATCH(r.Path, tsingHandler(r.Method, r.Path))
+		case "PUT":
+			g.PUT(r.Path, tsingHandler(r.Method, r.Path))
+		case "DELETE":
+			g.DELETE(r.Path, tsingHandler(r.Method, r.Path))
+		}
+	}
+}
+
+func BenchmarkTsingStatic(b *testing.B) {
+	g := tsing.New(&tsing.Config{})
+	loadTsingRoutes(g, static)
+	benchmarkRoutes(b, g, static)
+}
+
+func BenchmarkTsingGitHubAPI(b *testing.B) {
+	g := tsing.New(&tsing.Config{})
+	loadTsingRoutes(g, githubAPI)
+	benchmarkRoutes(b, g, githubAPI)
+}
+
+func BenchmarkTsingGplusAPI(b *testing.B) {
+	g := tsing.New(&tsing.Config{})
+	loadTsingRoutes(g, gplusAPI)
+	benchmarkRoutes(b, g, gplusAPI)
+}
+
+func BenchmarkTsingParseAPI(b *testing.B) {
+	g := tsing.New(&tsing.Config{})
+	loadTsingRoutes(g, parseAPI)
 	benchmarkRoutes(b, g, parseAPI)
 }
